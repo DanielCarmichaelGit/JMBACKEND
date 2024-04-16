@@ -3653,6 +3653,88 @@ app.post("/authorize-business-access", async (req, res) => {
   }
 });
 
+app.get("/join-codes", async (req, res) => {
+  try {
+    const { auth } = req.body;
+
+    if (auth && auth === process.env.BUSINESS_AUTH_CODE) {
+      dbConnect(process.env.GEN_AUTH);
+
+      const join_codes = await JoinCode.find();
+
+      res.status(200).json({
+        message: "Join Codes Found",
+        count: join_codes.length,
+        join_codes,
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ status: 500, message: error });
+  }
+});
+
+app.get("/business-user", async (req, res) => {
+  try {
+    const { auth, email } = req.body;
+
+    if (auth && auth === process.env.BUSINESS_AUTH_CODE) {
+      dbConnect(process.env.GEN_AUTH);
+
+      const user = await User.findOne({ email }).select("user_id");
+
+      if (user) {
+        res.status(200).json({
+          message: "User Found",
+          user,
+        });
+      } else {
+        res
+          .status(404)
+          .json({
+            message: "No User Found with given email",
+            requested_resource: `{email: ${email} }`,
+          });
+      }
+    }
+  } catch (error) {
+    res.status(500).json({ status: 500, message: error });
+  }
+});
+
+app.post("/join-codes", async (req, res) => {
+  try {
+    const {
+      auth,
+      account_type,
+      discount_type,
+      discount_duration,
+      code,
+      account_id,
+    } = req.body;
+
+    if (auth && auth === process.env.BUSINESS_AUTH_CODE) {
+      const newCode = new JoinCode({
+        code_id: uuidv4(),
+        code,
+        account_id,
+        account_type,
+        discount_type,
+        discount_duration,
+        created_on: Date.now(),
+      });
+
+      const created_code = newCode.save();
+
+      res.status(200).json({
+        message: "Code Created",
+        code: created_code,
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ status: 500, message: error });
+  }
+});
+
 // app.post("/client", async (req, res) => {
 //   try {
 //     dbConnect(process.env.GEN_AUTH);

@@ -5,8 +5,9 @@ const joinCodeSchema = new mongoose.Schema({
   code: { type: String, required: true },
   account_type: { type: String, required: true },
   account_id: { type: String, required: true },
-  offer_type: { type: String, required: true },
-  offer_data: { type: Object, required: true }
+  discount_type: { type: String, required: true },
+  discount_duration: { type: String, required: true },
+  created_on: { type: String, required: true },
 });
 
 module.exports = mongoose.model("JoinCode", joinCodeSchema);
