@@ -3466,6 +3466,40 @@ app.get("/client-user", authenticateJWT, async (req, res) => {
   }
 });
 
+app.get("/client-account", authenticateJWT, async (req, res) => {
+  try {
+    dbConnect(process.env.GEN_AUTH);
+
+    const client_account_id = req.user.account_id;
+
+    if (client_account_id) {
+      const client_account = await ClientAccount.findOne({
+        client_account_id,
+      });
+
+      if (client_account) {
+        res.status(200).json({
+          message: "Client User Found",
+          client_account,
+        });
+      } else {
+        res.status(404).json({
+          message: "No Client User Found",
+          requested_resource: {
+            client_account_id,
+          },
+        });
+      }
+    } else {
+      res.status(409).json({
+        message: "Authentication Invalid",
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ status: 500, message: error });
+  }
+});
+
 app.post("/client-user", async (req, res) => {
   try {
     dbConnect(process.env.GEN_AUTH);
