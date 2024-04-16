@@ -3680,7 +3680,7 @@ app.get("/business-user", async (req, res) => {
     if (auth && auth === process.env.BUSINESS_AUTH_CODE) {
       dbConnect(process.env.GEN_AUTH);
 
-      const user = await User.findOne({ email }).select("user_id");
+      const user = await User.findOne({ email }).select("user_id -_id");
 
       if (user) {
         res.status(200).json({
@@ -3695,6 +3695,9 @@ app.get("/business-user", async (req, res) => {
             requested_resource: `{email: ${email} }`,
           });
       }
+      
+    } else {
+      res.status(409).json({ message: "UNAUTHORIZED" })
     }
   } catch (error) {
     res.status(500).json({ status: 500, message: error });
