@@ -3768,12 +3768,12 @@ app.post("/contracts", authenticateJWT, async (req, res) => {
         description,
         skills,
         budget,
+        status: "Open",
         client_account_id,
         created_date: Date.now(),
-        status: "Open",
+        timeline,
+        recurring: false,
         application_count: 0,
-        recurring: falsee,
-        timeline
       })
 
       const created_contract = await newContract.save();
