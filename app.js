@@ -3726,7 +3726,7 @@ app.post("/join-codes", async (req, res) => {
         created_on: Date.now(),
       });
 
-      const created_code = newCode.save();
+      const created_code = await newCode.save();
 
       res.status(200).json({
         message: "Code Created",
