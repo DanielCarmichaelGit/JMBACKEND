@@ -10,7 +10,10 @@ const contractSchema = new mongoose.Schema({
   client_account_id: { type: String, required: false },
   project_id: { type: String, required: false },
   created_date: { type: String, required: false },
-  timeline: { type: Object, required: true }
+  timeline: { type: Object, required: true },
+  recurring: { type: Boolean, required: true },
+  recurring_timeline: { type: Object, required: false },
+  application_count: { type: Number, required: true }
 });
 
 module.exports = mongoose.model("Contract", contractSchema);
