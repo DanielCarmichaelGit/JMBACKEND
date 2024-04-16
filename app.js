@@ -3688,16 +3688,32 @@ app.get("/business-user", async (req, res) => {
           user,
         });
       } else {
-        res
-          .status(404)
-          .json({
-            message: "No User Found with given email",
-            requested_resource: `{email: ${email} }`,
-          });
+        res.status(404).json({
+          message: "No User Found with given email",
+          requested_resource: `{email: ${email} }`,
+        });
       }
+    } else {
+      res.status(409).json({ message: "UNAUTHORIZED", auth, email });
+    }
+  } catch (error) {
+    res.status(500).json({ status: 500, message: error });
+  }
+});
+
+app.delete("/join-codes", async (req, res) => {
+  try {
+    const { auth, code_id } = req.body;
+
+    if (auth && auth === process.env.BUSINESS_AUTH_CODE) {
+      await JoinCode.findOneAndDelete({ code_id });
+
+      res.status(202).json({
+        message: "Code Deleted"
+      })
 
     } else {
-      res.status(409).json({ message: "UNAUTHORIZED", auth, email })
+      res.status(409).json({ message: "UNAUTHORIZED" });
     }
   } catch (error) {
     res.status(500).json({ status: 500, message: error });
@@ -3726,6 +3742,7 @@ app.post("/join-codes", async (req, res) => {
         discount_type,
         discount_duration,
         created_on: Date.now(),
+        uses: 0,
       });
 
       const created_code = await newCode.save();

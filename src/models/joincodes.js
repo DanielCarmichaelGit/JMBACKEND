@@ -8,6 +8,7 @@ const joinCodeSchema = new mongoose.Schema({
   discount_type: { type: String, required: true },
   discount_duration: { type: String, required: true },
   created_on: { type: String, required: true },
+  uses: { type: Number, required: true }
 });
 
 module.exports = mongoose.model("JoinCode", joinCodeSchema);
