@@ -3695,9 +3695,9 @@ app.get("/business-user", async (req, res) => {
             requested_resource: `{email: ${email} }`,
           });
       }
-      
+
     } else {
-      res.status(409).json({ message: "UNAUTHORIZED" })
+      res.status(409).json({ message: "UNAUTHORIZED", auth, email })
     }
   } catch (error) {
     res.status(500).json({ status: 500, message: error });
