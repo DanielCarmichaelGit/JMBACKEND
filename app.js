@@ -3570,22 +3570,11 @@ app.post("/client-user", async (req, res) => {
 
 app.post("/client-account", async (req, res) => {
   try {
-    const { account_email, account_password, account_name, join_code } =
-      req.body;
+    const { account_email, account_password, account_name } = req.body;
 
     if (account_email) {
       if (account_password) {
         dbConnect(process.env.GEN_AUTH);
-
-        let join_offer = {};
-
-        if (join_code) {
-          const offer = await JoinCode.findOne({ code: join_code });
-
-          if (offer) {
-            join_offer = offer;
-          }
-        }
 
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(account_password, saltRounds);
@@ -3604,10 +3593,19 @@ app.post("/client-account", async (req, res) => {
 
         const created_client_account = await newClientAccount.save();
 
+        const token = jwt.sign(
+          { client_account: created_client_account, account_id: created_client_account.account_id },
+          process.env.SECRET_JWT,
+          {
+            expiresIn: "7d",
+          }
+        );
+
         res.status(200).json({
           message: "Client account created",
           status: 200,
           client_account: created_client_account,
+          token
         });
       } else {
         res.status(400).json({
@@ -3707,13 +3705,12 @@ app.delete("/join-codes", async (req, res) => {
 
     if (auth && auth === process.env.BUSINESS_AUTH_CODE) {
       dbConnect(process.env.GEN_AUTH);
-      
+
       await JoinCode.findOneAndDelete({ code_id });
 
       res.status(202).json({
-        message: "Code Deleted"
-      })
-
+        message: "Code Deleted",
+      });
     } else {
       res.status(409).json({ message: "UNAUTHORIZED" });
     }
