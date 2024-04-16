@@ -1491,9 +1491,11 @@ app.post("/invoices", authenticateJWT, async (req, res) => {
           const hours_to_bill = Math.floor(seconds_to_bill / (60 * 60 * 1000));
 
           const dead_hours =
-            ((
+            (
               (seconds_to_bill / (60 * 60 * 1000)).toFixed(3) - hours_to_bill
-            ).toFixed(3) + existing_dead_hours) - (task.dead_hours ? task.dead_hours : 0);
+            ).toFixed(3) +
+            existing_dead_hours -
+            (task.dead_hours ? task.dead_hours : 0);
           return { hours_to_bill, dead_hours };
         }
 
@@ -1519,7 +1521,7 @@ app.post("/invoices", authenticateJWT, async (req, res) => {
             },
             metadata: {
               client: client_metadata,
-              title
+              title,
             },
             transfer_data: {
               destination: organization.stripe_account.id,
@@ -1536,7 +1538,7 @@ app.post("/invoices", authenticateJWT, async (req, res) => {
                 task,
                 existing_dead_hours
               );
-              // my problem is that when I add an invoice, it gets the existing dead hours and adds them to the new dead hours. 
+              // my problem is that when I add an invoice, it gets the existing dead hours and adds them to the new dead hours.
               // this does not account for if you keep billing the same tasks dead hours.
 
               // update tasks billed duration
@@ -1584,16 +1586,27 @@ app.post("/invoices", authenticateJWT, async (req, res) => {
               }
 
               // update task to reflect existing dead hours
-              Task.findOneAndUpdate({ task_id: task.task_id }, {
-                dead_hours: dead_hours,
-                billed_duration: (task.billed_duration || 0) + (hours_to_bill * 60 * 60 * 1000)
-              })
+              Task.findOneAndUpdate(
+                { task_id: task.task_id },
+                {
+                  dead_hours: dead_hours,
+                  billed_duration:
+                    (task.billed_duration || 0) +
+                    hours_to_bill * 60 * 60 * 1000,
+                }
+              );
 
               if (task.project?.project_id) {
-                Project.findOneAndUpdate({ project_id: task.project.project_id }, {
-                  $push: { invoices: invoice.id },
-                  $inc: { cost: stripe_invoice_price * hours_to_bill, total_time: (hours_to_bill * 60 * 60 * 1000) }
-                })
+                Project.findOneAndUpdate(
+                  { project_id: task.project.project_id },
+                  {
+                    $push: { invoices: invoice.id },
+                    $inc: {
+                      cost: stripe_invoice_price * hours_to_bill,
+                      total_time: hours_to_bill * 60 * 60 * 1000,
+                    },
+                  }
+                );
               }
             }
             const finalized_invoice = await stripe.invoices.finalizeInvoice(
@@ -3557,7 +3570,8 @@ app.post("/client-user", async (req, res) => {
 
 app.post("/client-account", async (req, res) => {
   try {
-    const { account_email, account_password, account_name, join_code } = req.body;
+    const { account_email, account_password, account_name, join_code } =
+      req.body;
 
     if (account_email) {
       if (account_password) {
@@ -3567,7 +3581,7 @@ app.post("/client-account", async (req, res) => {
 
         if (join_code) {
           const offer = await JoinCode.findOne({ code: join_code });
-          
+
           if (offer) {
             join_offer = offer;
           }
@@ -3582,38 +3596,35 @@ app.post("/client-account", async (req, res) => {
           account_name,
           account_email,
           hashedPassword,
-          tags: [
-            "New",
-            "Trusted",
-          ],
+          tags: ["New", "Trusted"],
           creation_date: Date.now(),
           rating: 5,
-          join_offer
-        })
+          join_offer,
+        });
 
         const created_client_account = await newClientAccount.save();
 
         res.status(200).json({
           message: "Client account created",
           status: 200,
-          client_account: created_client_account
-        })
+          client_account: created_client_account,
+        });
       } else {
         res.status(400).json({
           message: "Please include an account password",
-          status: 400
-        })
+          status: 400,
+        });
       }
     } else {
       res.status(400).json({
         message: "Please include an account email",
-        status: 400
-      })
+        status: 400,
+      });
     }
   } catch (error) {
     res.status(500).json({ status: 500, message: error });
   }
-})
+});
 
 app.post("/authorize-business-access", async (req, res) => {
   try {
@@ -3623,19 +3634,24 @@ app.post("/authorize-business-access", async (req, res) => {
       if (code === process.env.BUSINESS_AUTH_CODE) {
         res.status(200).json({
           message: "AUTHORIZED",
-          status: 202
-        })
+          status: 202,
+        });
+      } else {
+        res.status(200).json({
+          message: "UNAUTHORIZED",
+          status: 409,
+        });
       }
     } else {
       res.status(200).json({
         message: "UNAUTHORIZED",
-        status: 409
-      })
+        status: 409,
+      });
     }
   } catch (error) {
     res.status(500).json({ status: 500, message: error });
   }
-})
+});
 
 // app.post("/client", async (req, res) => {
 //   try {
@@ -3647,7 +3663,7 @@ app.post("/authorize-business-access", async (req, res) => {
 //     if (client_name && (!associated_org_id || !invitation_id)) {
 
 //       const newClient = new Client({
-        
+
 //       });
 
 //     } else if (client_name && associated_org_id && invitation_id) {
@@ -3655,7 +3671,7 @@ app.post("/authorize-business-access", async (req, res) => {
 //         client_name,
 //         "associated_org.org_id": associated_org_id,
 //       });
-  
+
 //       if (existing_client) {
 //         res.status(409).message({
 //           message: "Client already exists. Please log in.",
@@ -3676,9 +3692,9 @@ app.post("/authorize-business-access", async (req, res) => {
 //             client_admin: {},
 //             documents: [],
 //           });
-  
+
 //           const created_client = await new_client.save();
-  
+
 //           await ClientInvitation.findOneAndUpdate(
 //             {
 //               invitation_id,
@@ -3687,7 +3703,7 @@ app.post("/authorize-business-access", async (req, res) => {
 //               status: "accepted",
 //             }
 //           );
-  
+
 //           await Organization.findOneAndUpdate(
 //             { org_id: associated_org_id },
 //             {
@@ -3696,7 +3712,7 @@ app.post("/authorize-business-access", async (req, res) => {
 //               },
 //             }
 //           );
-  
+
 //           res.status(200).json({
 //             message: "Client created",
 //             client: created_client,
