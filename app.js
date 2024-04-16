@@ -3706,6 +3706,8 @@ app.delete("/join-codes", async (req, res) => {
     const { auth, code_id } = req.body;
 
     if (auth && auth === process.env.BUSINESS_AUTH_CODE) {
+      dbConnect(process.env.GEN_AUTH);
+      
       await JoinCode.findOneAndDelete({ code_id });
 
       res.status(202).json({
