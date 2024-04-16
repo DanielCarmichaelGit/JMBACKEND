@@ -3769,7 +3769,8 @@ app.post("/contract", authenticateJWT, async (req, res) => {
         skills,
         budget,
         client_account_id,
-        created_date: Date.now()
+        created_date: Date.now(),
+        status: "Open"
       })
 
       const created_contract = await newContract.save();
