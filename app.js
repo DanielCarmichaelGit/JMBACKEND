@@ -3754,7 +3754,7 @@ app.post("/join-codes", async (req, res) => {
   }
 });
 
-app.post("/contract", authenticateJWT, async (req, res) => {
+app.post("/contracts", authenticateJWT, async (req, res) => {
   try {
     const { title, description, skills, budget } = req.body;
     const client_account_id = req.user.account_id;
@@ -3789,6 +3789,28 @@ app.post("/contract", authenticateJWT, async (req, res) => {
     res.status(500).json({ status: 500, message: error });
   }
 });
+
+app.get("/contracts-authenticated", authenticateJWT, async (req, res) => {
+  try {
+    const client_account_id = req.user.account_id;
+    const user_id = req.user.userId;
+
+    if (client_account_id) {
+      const contracts = Contract.find({ client_account_id });
+
+      res.status(202).json({
+        message: "Contracts found",
+        count: contracts.length,
+        contracts
+      })
+      
+    } else if (user_id) {
+      res.status("working on this")
+    }
+  } catch (error) {
+    res.status(500).json({ status: 500, message: error });
+  }
+})
 
 // app.post("/client", async (req, res) => {
 //   try {
