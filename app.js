@@ -3835,7 +3835,15 @@ app.get("/contracts-authenticated", authenticateJWT, async (req, res) => {
     dbConnect(process.env.GEN_AUTH);
 
     if (client_account_id) {
-      const contracts = await Contract.find({ client_account_id });
+      const client_account = await ClientAccount.findOne({ account_id: client_account_id });
+      let contracts = await Contract.find({ client_account_id });
+
+      contracts = contracts.map((contract) => {
+        return {
+          ...contract,
+          rating: client_account.rating
+        }
+      })
 
       res.status(202).json({
         message: "Contracts found",
