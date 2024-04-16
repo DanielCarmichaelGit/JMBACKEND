@@ -3840,7 +3840,7 @@ app.get("/contracts-authenticated", authenticateJWT, async (req, res) => {
 
       contracts = contracts.map((contract) => {
         return {
-          ...contract,
+          ...contract._doc,
           rating: client_account.rating
         }
       })
