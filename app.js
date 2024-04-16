@@ -3383,28 +3383,27 @@ app.get("/projects", authenticateJWT, async (req, res) => {
   }
 });
 
-app.post("/client-login", async (req, res) => {
+app.post("/client-account-login", async (req, res) => {
   try {
     dbConnect(process.env.GEN_AUTH);
 
     const { client_user_email, client_user_password } = req.body;
 
-    const client_user = await ClientUser.findOne({ client_user_email });
-    const client = await Client.findOne({
-      client_id: client_user.client.client_id,
+    const client_account = await ClientAccount.findOne({
+      account_email: client_user_email,
     });
 
-    if (client_user) {
+    if (client_account) {
       const hash_compare = await comparePassword(
         client_user_password,
-        client_user.client_user_password
+        client_account.account_password
       );
 
       if (hash_compare) {
-        const signed_client_user = jwt.sign(
+        const signed_client_account = jwt.sign(
           {
-            client_id: client.client_id,
-            client_user_id: client_user.client_user_id,
+            account_id: client_account.account_id,
+            client_account,
           },
           process.env.SECRET_JWT,
           {
@@ -3414,18 +3413,14 @@ app.post("/client-login", async (req, res) => {
 
         res.status(200).json({
           message: "Client Logged In",
-          token: signed_client_user,
-          client_user,
+          token: signed_client_account,
+          client_account,
         });
       } else {
         res.status(409).json({
           message: "Authentication Invalid",
         });
       }
-    } else if (client_user.client_user_password !== client_user_password) {
-      res.status(404).json({
-        message: "Incorrect Login Credentials",
-      });
     } else {
       res.status(404).json({
         message: "Could not find client user with the provided credentials",
@@ -3593,7 +3588,10 @@ app.post("/client-account", async (req, res) => {
         const created_client_account = await newClientAccount.save();
 
         const token = jwt.sign(
-          { client_account: created_client_account, account_id: created_client_account.account_id },
+          {
+            client_account: created_client_account,
+            account_id: created_client_account.account_id,
+          },
           process.env.SECRET_JWT,
           {
             expiresIn: "7d",
@@ -3604,7 +3602,7 @@ app.post("/client-account", async (req, res) => {
           message: "Client account created",
           status: 200,
           client_account: created_client_account,
-          token
+          token,
         });
       } else {
         res.status(400).json({
