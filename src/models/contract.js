@@ -7,7 +7,7 @@ const contractSchema = new mongoose.Schema({
   skills: { type: Array, required: false },
   budget: { type: Object, required: true },
   status: { type: String, required: true },
-  client_account: { type: Object, required: false },
+  client_account_id: { type: String, required: false },
   project_id: { type: String, required: false },
   created_date: { type: String, required: false }
 });

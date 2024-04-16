@@ -29,6 +29,7 @@ const Client = require("./src/models/client");
 const TeamInvitation = require("./src/models/teamInvitation");
 const ClientAccount = require("./src/models/clientAccount");
 const JoinCode = require("./src/models/joincodes");
+const Contract = require("./src/models/contract");
 
 const app = express();
 app.use(cors());
@@ -3747,6 +3748,41 @@ app.post("/join-codes", async (req, res) => {
         message: "Code Created",
         code: created_code,
       });
+    }
+  } catch (error) {
+    res.status(500).json({ status: 500, message: error });
+  }
+});
+
+app.post("/contract", authenticateJWT, async (req, res) => {
+  try {
+    const { title, description, skills, budget } = req.body;
+    const client_account_id = req.user.account_id;
+
+    if (client_account_id) {
+      dbConnect(process.env.GEN_AUTH);
+
+      const newContract = new Contract({
+        contract_id: uuidv4(),
+        title,
+        description,
+        skills,
+        budget,
+        client_account_id,
+        created_date: Date.now()
+      })
+
+      const created_contract = await newContract.save();
+
+      res.status(200).json({
+        message: "Contract Created",
+        contract: created_contract
+      })
+
+    } else {
+      res.status(409).json({
+        message: "Invalid auth"
+      })
     }
   } catch (error) {
     res.status(500).json({ status: 500, message: error });
