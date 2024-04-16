@@ -3794,6 +3794,8 @@ app.get("/contracts-authenticated", authenticateJWT, async (req, res) => {
   try {
     const client_account_id = req.user.account_id;
     const user_id = req.user.userId;
+    
+    dbConnect(process.env.GEN_AUTH);
 
     if (client_account_id) {
       const contracts = Contract.find({ client_account_id });
@@ -3803,7 +3805,7 @@ app.get("/contracts-authenticated", authenticateJWT, async (req, res) => {
         count: contracts.length,
         contracts
       })
-      
+
     } else if (user_id) {
       res.status("working on this")
     }
