@@ -3655,7 +3655,7 @@ app.post("/authorize-business-access", async (req, res) => {
 
 app.get("/join-codes", async (req, res) => {
   try {
-    const { auth } = req.body;
+    const { auth } = req.query;
 
     if (auth && auth === process.env.BUSINESS_AUTH_CODE) {
       dbConnect(process.env.GEN_AUTH);
@@ -3675,7 +3675,7 @@ app.get("/join-codes", async (req, res) => {
 
 app.get("/business-user", async (req, res) => {
   try {
-    const { auth, email } = req.body;
+    const { auth, email } = req.query;
 
     if (auth && auth === process.env.BUSINESS_AUTH_CODE) {
       dbConnect(process.env.GEN_AUTH);
