@@ -3716,6 +3716,8 @@ app.post("/join-codes", async (req, res) => {
     } = req.body;
 
     if (auth && auth === process.env.BUSINESS_AUTH_CODE) {
+      dbConnect(process.env.GEN_AUTH);
+
       const newCode = new JoinCode({
         code_id: uuidv4(),
         code,
