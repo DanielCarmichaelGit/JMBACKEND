@@ -3474,7 +3474,7 @@ app.get("/client-account", authenticateJWT, async (req, res) => {
 
     if (client_account_id) {
       const client_account = await ClientAccount.findOne({
-        client_account_id,
+        account_id: client_account_id,
       });
 
       if (client_account) {
