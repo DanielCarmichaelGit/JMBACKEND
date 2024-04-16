@@ -3584,11 +3584,10 @@ app.post("/client-account", async (req, res) => {
           status: "Active",
           account_name,
           account_email,
-          hashedPassword,
+          account_password: hashedPassword,
           tags: ["New", "Trusted"],
           creation_date: Date.now(),
           rating: 5,
-          join_offer,
         });
 
         const created_client_account = await newClientAccount.save();
