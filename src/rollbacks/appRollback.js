@@ -28,6 +28,8 @@ app.get("/", (req, res) => {
   return res.status(200).json({ message: "working" });
 });
 
+
+
 // this endpoint uses the "auth" auth
 app.post("/login", async (req, res) => {
   dbConnect(process.env.MONGODB_AUTH);

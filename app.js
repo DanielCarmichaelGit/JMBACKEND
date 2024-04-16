@@ -27,6 +27,8 @@ const ClientInvitation = require("./src/models/clientInvitation");
 const ClientUser = require("./src/models/clientUser");
 const Client = require("./src/models/client");
 const TeamInvitation = require("./src/models/teamInvitation");
+const ClientAccount = require("./src/models/clientAccount");
+const JoinCode = require("./src/models/joincodes");
 
 const app = express();
 app.use(cors());
@@ -2109,21 +2111,6 @@ app.get("/folders", authenticateJWT, async (req, res) => {
   }
 });
 
-// app.post("/clients", authenticateJWT, async (req, res) => {
-//   try {
-//     dbConnect(process.env.GEN_AUTH);
-//     const client_id = uuidv4();
-//     const associated_org = req.user.organization;
-//     const user = req.user;
-//     const {  } = req.body;
-
-//   } catch (error) {
-//     res.status(500).json({
-//       message: error.message
-//     });
-//   }
-// })
-
 app.post("/client-invitation", authenticateJWT, async (req, res) => {
   try {
     dbConnect(process.env.GEN_AUTH);
@@ -3568,73 +3555,164 @@ app.post("/client-user", async (req, res) => {
   }
 });
 
-app.post("/client", async (req, res) => {
+app.post("/client-account", async (req, res) => {
   try {
-    dbConnect(process.env.GEN_AUTH);
-    const client_id = uuidv4();
+    const { account_email, account_password, account_name, join_code } = req.body;
 
-    const { client_name, associated_org_id, invitation_id } = req.body;
+    if (account_email) {
+      if (account_password) {
+        dbConnect(process.env.GEN_AUTH);
 
-    const existing_client = await Client.findOne({
-      client_name,
-      "associated_org.org_id": associated_org_id,
-    });
+        let join_offer = {};
 
-    if (existing_client) {
-      res.status(409).message({
-        message: "Client already exists. Please log in.",
-        client: existing_client,
-      });
-    } else {
-      const organization = await Organization.findOne({
-        org_id: associated_org_id,
-      });
-      if (organization) {
-        const new_client = new Client({
-          client_id,
-          associated_org: organization,
-          client_users: [],
-          client_poc: {},
-          org_poc: organization.billable_user,
-          client_name,
-          client_admin: {},
-          documents: [],
-        });
-
-        const created_client = await new_client.save();
-
-        await ClientInvitation.findOneAndUpdate(
-          {
-            invitation_id,
-          },
-          {
-            status: "accepted",
+        if (join_code) {
+          const offer = await JoinCode.findOne({ code: join_code });
+          
+          if (offer) {
+            join_offer = offer;
           }
-        );
+        }
 
-        await Organization.findOneAndUpdate(
-          { org_id: associated_org_id },
-          {
-            $push: {
-              clients: new_client,
-            },
-          }
-        );
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(account_password, saltRounds);
+
+        const newClientAccount = new ClientAccount({
+          account_id: uuidv4(),
+          status: "Active",
+          account_name,
+          account_email,
+          hashedPassword,
+          tags: [
+            "New",
+            "Trusted",
+          ],
+          creation_date: Date.now(),
+          rating: 5,
+          join_offer
+        })
+
+        const created_client_account = await newClientAccount.save();
 
         res.status(200).json({
-          message: "Client created",
-          client: created_client,
-        });
+          message: "Client account created",
+          status: 200,
+          client_account: created_client_account
+        })
       } else {
-        res.status(404).json({
-          message: `Organization associated with the id of "${associated_org_id}" does not exist`,
-        });
+        res.status(400).json({
+          message: "Please include an account password",
+          status: 400
+        })
       }
+    } else {
+      res.status(400).json({
+        message: "Please include an account email",
+        status: 400
+      })
     }
   } catch (error) {
     res.status(500).json({ status: 500, message: error });
   }
-});
+})
+
+app.post("/authorize-business-access", async (req, res) => {
+  try {
+    const { code } = req.body;
+
+    if (code) {
+      if (code === process.env.BUSINESS_AUTH_CODE) {
+        res.status(200).json({
+          message: "AUTHORIZED",
+          status: 202
+        })
+      }
+    } else {
+      res.status(200).json({
+        message: "UNAUTHORIZED",
+        status: 409
+      })
+    }
+  } catch (error) {
+    res.status(500).json({ status: 500, message: error });
+  }
+})
+
+// app.post("/client", async (req, res) => {
+//   try {
+//     dbConnect(process.env.GEN_AUTH);
+//     const client_id = uuidv4();
+
+//     const { client_name, associated_org_id, invitation_id } = req.body;
+
+//     if (client_name && (!associated_org_id || !invitation_id)) {
+
+//       const newClient = new Client({
+        
+//       });
+
+//     } else if (client_name && associated_org_id && invitation_id) {
+//       const existing_client = await Client.findOne({
+//         client_name,
+//         "associated_org.org_id": associated_org_id,
+//       });
+  
+//       if (existing_client) {
+//         res.status(409).message({
+//           message: "Client already exists. Please log in.",
+//           client: existing_client,
+//         });
+//       } else {
+//         const organization = await Organization.findOne({
+//           org_id: associated_org_id,
+//         });
+//         if (organization) {
+//           const new_client = new Client({
+//             client_id,
+//             associated_org: organization,
+//             client_users: [],
+//             client_poc: {},
+//             org_poc: organization.billable_user,
+//             client_name,
+//             client_admin: {},
+//             documents: [],
+//           });
+  
+//           const created_client = await new_client.save();
+  
+//           await ClientInvitation.findOneAndUpdate(
+//             {
+//               invitation_id,
+//             },
+//             {
+//               status: "accepted",
+//             }
+//           );
+  
+//           await Organization.findOneAndUpdate(
+//             { org_id: associated_org_id },
+//             {
+//               $push: {
+//                 clients: new_client,
+//               },
+//             }
+//           );
+  
+//           res.status(200).json({
+//             message: "Client created",
+//             client: created_client,
+//           });
+//         } else {
+//           res.status(404).json({
+//             message: `Organization associated with the id of "${associated_org_id}" does not exist`,
+//           });
+//         }
+//       }
+//     }
+
+//   } catch (error) {
+//     res.status(500).json({ status: 500, message: error });
+//   }
+// });
 
 app.get("/client", authenticateJWT, async (req, res) => {
   try {
