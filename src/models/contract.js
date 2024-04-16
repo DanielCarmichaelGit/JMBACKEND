@@ -9,7 +9,8 @@ const contractSchema = new mongoose.Schema({
   status: { type: String, required: true },
   client_account_id: { type: String, required: false },
   project_id: { type: String, required: false },
-  created_date: { type: String, required: false }
+  created_date: { type: String, required: false },
+  timeline: { type: Object, required: true }
 });
 
 module.exports = mongoose.model("Contract", contractSchema);

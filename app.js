@@ -3756,7 +3756,7 @@ app.post("/join-codes", async (req, res) => {
 
 app.post("/contracts", authenticateJWT, async (req, res) => {
   try {
-    const { title, description, skills, budget } = req.body;
+    const { title, description, skills, budget, timeline } = req.body;
     const client_account_id = req.user.account_id;
 
     if (client_account_id) {
