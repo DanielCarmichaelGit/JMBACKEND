@@ -3895,27 +3895,58 @@ app.get("/contracts-authenticated", authenticateJWT, async (req, res) => {
 
 app.get("/contracts-unauthenticated", async (req, res) => {
   try {
-    const { filter_date, filter_skills, filter_title, filter_timeline, skip } = req.query;
-    dbConnect(process.env.GEN_AUTH);
-    
-    let contracts = await Contract.find({ client_account_id });
+    const {
+      filter_date,
+      filter_skills,
+      filter_title,
+      filter_timeline,
+      skip,
+    } = req.query;
 
-    contracts = contracts.map((contract) => {
-      return {
-        ...contract._doc,
-        rating: client_account.rating
-      }
-    })
+    dbConnect(process.env.GEN_AUTH);
+
+    // Create an empty query object
+    const query = {};
+
+    // Apply filters to the query object based on the provided parameters
+    if (filter_date) {
+      const currentTime = Date.now();
+      const filterTime = currentTime - parseInt(filter_date) * 60 * 60 * 1000;
+      query.created_date = {
+        $gte: filterTime.toString(),
+        $lte: currentTime.toString(),
+      };
+    }
+
+    if (filter_skills && filter_skills.length > 0) {
+      query.skills = { $in: filter_skills };
+    }
+
+    if (filter_title) {
+      query.$or = [
+        { title: { $regex: filter_title, $options: "i" } },
+        { description: { $regex: filter_title, $options: "i" } },
+      ];
+    }
+
+    if (filter_timeline && filter_timeline.title) {
+      query["timeline.title"] = filter_timeline.title;
+    }
+
+    // Find contracts based on the query object
+    const contracts = await Contract.find(query)
+      .skip(parseInt(skip))
+      .exec();
 
     res.status(202).json({
       message: "Contracts found",
       count: contracts.length,
-      contracts
-    })
+      contracts,
+    });
   } catch (error) {
-    res.status(500).json({ status: 500, message: error });
+    res.status(500).json({ status: 500, message: error.message });
   }
-})
+});
 
 // app.post("/client", async (req, res) => {
 //   try {
