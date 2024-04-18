@@ -30,6 +30,7 @@ const TeamInvitation = require("./src/models/teamInvitation");
 const ClientAccount = require("./src/models/clientAccount");
 const JoinCode = require("./src/models/joincodes");
 const Contract = require("./src/models/contract");
+const Skill = require("./src/models/skill");
 
 const app = express();
 app.use(cors());
@@ -3788,19 +3789,35 @@ app.post("/join-codes", async (req, res) => {
   }
 });
 
+app.get("/skills", async (req, res) => {
+  try {
+    dbConnect(process.env.GEN_AUTH);
+
+    const skills = await Skill.find();
+
+    res.status(202).json({
+      message: "Skills found",
+      count: skills.length,
+      skills
+    })
+  } catch (error) {
+    res.status(500).json({ status: 500, message: error });
+  }
+})
+
 app.post("/contracts", authenticateJWT, async (req, res) => {
   try {
     const { title, description, skills, budget, timeline } = req.body;
     const client_account_id = req.user.account_id;
-
+    
     if (client_account_id) {
       dbConnect(process.env.GEN_AUTH);
-
+      
       const newContract = new Contract({
         contract_id: uuidv4(),
         title,
         description,
-        skills,
+        skills: [],
         budget,
         status: "Open",
         client_account_id,
@@ -3808,19 +3825,27 @@ app.post("/contracts", authenticateJWT, async (req, res) => {
         timeline,
         recurring: false,
         application_count: 0,
-      })
-
+      });
+      
       const created_contract = await newContract.save();
-
-      res.status(200).json({
-        message: "Contract Created",
-        contract: created_contract
-      })
-
+      res.status(200).json({ message: "Contract Created", contract: created_contract });
+      
+      // Create or retrieve skill documents asynchronously
+      skills.forEach(async (skill) => {
+        const { title } = skill;
+        const existingSkill = await Skill.findOne({ skill_title: title });
+        
+        if (!existingSkill) {
+          const newSkill = new Skill({
+            skill_id: uuidv4(),
+            skill_title: title
+          });
+          
+          await newSkill.save();
+        }
+      });
     } else {
-      res.status(409).json({
-        message: "Invalid auth"
-      })
+      res.status(409).json({ message: "Invalid auth" });
     }
   } catch (error) {
     res.status(500).json({ status: 500, message: error });
@@ -3854,6 +3879,31 @@ app.get("/contracts-authenticated", authenticateJWT, async (req, res) => {
     } else if (user_id) {
       res.status("working on this")
     }
+  } catch (error) {
+    res.status(500).json({ status: 500, message: error });
+  }
+})
+
+app.get("/contracts-unauthenticated", async (req, res) => {
+  try {
+    const { filter_date, filter_skills, filter_title, skip } = req.query;
+    dbConnect(process.env.GEN_AUTH);
+    
+    const client_account = await ClientAccount.findOne({ account_id: client_account_id });
+    let contracts = await Contract.find({ client_account_id });
+
+    contracts = contracts.map((contract) => {
+      return {
+        ...contract._doc,
+        rating: client_account.rating
+      }
+    })
+
+    res.status(202).json({
+      message: "Contracts found",
+      count: contracts.length,
+      contracts
+    })
   } catch (error) {
     res.status(500).json({ status: 500, message: error });
   }
