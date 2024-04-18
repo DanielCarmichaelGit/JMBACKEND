@@ -3929,7 +3929,7 @@ app.get("/contracts-unauthenticated", async (req, res) => {
 
     if (filter_timeline && filter_timeline !== "null") {
       query.timeline = {
-        title: decodeURIComponent(filter_timeline)
+        title: (decodeURIComponent(filter_timeline)).title
       }
     }
     
