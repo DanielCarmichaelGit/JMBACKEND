@@ -3944,19 +3944,24 @@ app.get("/contracts-unauthenticated", async (req, res) => {
     }
     
     let contracts = [];
+    let totalCount = 0;
 
     if (Object.keys(query).length > 0) {
+      totalCount = await Contract.countDocuments(query);
       contracts = await Contract.find(query).skip(parseInt(skip));
     } else {
+      totalCount = await Contract.countDocuments();
       contracts = await Contract.find().skip(parseInt(skip));
     }
+
+    const hasMoreResults = contracts.length < totalCount;
 
     res.status(202).json({
       message: "Contracts found",
       count: contracts.length,
+      totalCount,
+      hasMoreResults,
       contracts,
-      queries: query,
-      skills: filter_skills
     });
   } catch (error) {
     res.status(500).json({ status: 500, message: error.message });
