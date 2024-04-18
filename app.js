@@ -3907,26 +3907,15 @@ app.get("/contracts-unauthenticated", async (req, res) => {
     let query = {};
 
     if (filter_skills && filter_skills !== "null") {
-      const skills = filter_skills.split("%20");
-      if (skills.length > 0) {
-        query.$expr = {
-          $allElementsTrue: {
-            $map: {
-              input: skills,
-              in: {
-                $in: [
-                  "$$this",
-                  {
-                    $map: {
-                      input: "$skills.title",
-                      in: { $toLower: "$$this" }
-                    }
-                  }
-                ]
-              }
+      const parsed_skills = filter_skills.split("%20");
+      if (parsed_skills.length > 0) {
+        query.skills = {
+          $all: parsed_skills.map(skill => ({
+            $elemMatch: {
+              title: title
             }
-          }
-        };
+          }))
+        }
       }
     }
     
