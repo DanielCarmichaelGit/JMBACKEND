@@ -3928,8 +3928,10 @@ app.get("/contracts-unauthenticated", async (req, res) => {
     }
 
     if (filter_timeline && filter_timeline !== "null") {
+      const decoded = decodeURIComponent(filter_timeline);
+      const parsed = JSON.parse(decoded);
       query.timeline = {
-        title: JSON.parse((decodeURIComponent(filter_timeline))).title
+        title: parsed.title
       }
     }
     
