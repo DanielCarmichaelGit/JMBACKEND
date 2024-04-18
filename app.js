@@ -3912,7 +3912,7 @@ app.get("/contracts-unauthenticated", async (req, res) => {
         query.skills = {
           $all: parsed_skills.map(skill => ({
             $elemMatch: {
-              title: title
+              title: skill
             }
           }))
         }
