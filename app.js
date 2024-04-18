@@ -3911,7 +3911,7 @@ app.get("/contracts-unauthenticated", async (req, res) => {
     // Apply filters to the query object based on the provided parameters
     if (filter_date) {
       const currentTime = Date.now();
-      const filterTime = currentTime - parseInt(decodeURIComponent(filter_date)) * 60 * 60 * 1000;
+      const filterTime = currentTime - parseInt(filter_date) * 60 * 60 * 1000;
       query.created_date = {
         $gte: filterTime.toString(),
         $lte: currentTime.toString(),
@@ -3919,10 +3919,8 @@ app.get("/contracts-unauthenticated", async (req, res) => {
     }
 
     if (filter_skills) {
-      const skills = decodeURIComponent(filter_skills).split(",");
-      if (skills.length > 0) {
-        query.skills = { $in: skills };
-      }
+      const skills = filter_skills.split("%20");
+      query.skills = { $elemMatch: { title: { $in: skills.map(skill => new RegExp(skill, 'i')) } } };
     }
 
     if (filter_title) {
@@ -3940,6 +3938,7 @@ app.get("/contracts-unauthenticated", async (req, res) => {
 
     // Find contracts based on the query object
     const contracts = await Contract.find(query)
+      .limit(15)
       .skip(parseInt(skip))
       .exec();
 
