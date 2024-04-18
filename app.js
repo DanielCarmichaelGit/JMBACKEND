@@ -3932,6 +3932,16 @@ app.get("/contracts-unauthenticated", async (req, res) => {
       const parsed = JSON.parse(decoded);
       query["timeline.title"] = parsed.title
     }
+
+    if (filter_date && filter_date !== "null") {
+      const start = parseInt(filter_date) * 60 * 60 * 1000;
+      const end = Date.now();
+
+      query.created_date = {
+        $gte: new Date(end - start),
+        $lte: new Date(end)
+      };
+    }
     
     let contracts = [];
 
