@@ -3905,42 +3905,7 @@ app.get("/contracts-unauthenticated", async (req, res) => {
 
     dbConnect(process.env.GEN_AUTH);
 
-    // Create an empty query object
-    const query = {};
-
-    // Apply filters to the query object based on the provided parameters
-    if (filter_date) {
-      const currentTime = Date.now();
-      const filterTime = currentTime - parseInt(filter_date) * 60 * 60 * 1000;
-      query.created_date = {
-        $gte: filterTime.toString(),
-        $lte: currentTime.toString(),
-      };
-    }
-
-    if (filter_skills) {
-      const skills = filter_skills.split("%20");
-      query.skills = { $elemMatch: { title: { $in: skills.map(skill => new RegExp(skill, 'i')) } } };
-    }
-
-    if (filter_title) {
-      const decodedTitle = decodeURIComponent(filter_title);
-      query.$or = [
-        { title: { $regex: decodedTitle, $options: "i" } },
-        { description: { $regex: decodedTitle, $options: "i" } },
-      ];
-    }
-
-    if (filter_timeline && filter_timeline.title) {
-      const decodedTimelineTitle = decodeURIComponent(filter_timeline.title);
-      query["timeline.title"] = decodedTimelineTitle;
-    }
-
-    // Find contracts based on the query object
-    const contracts = await Contract.find(query)
-      .limit(15)
-      .skip(parseInt(skip))
-      .exec();
+    const contracts = await Contract.find().skip(parseInt(skip));
 
     res.status(202).json({
       message: "Contracts found",
