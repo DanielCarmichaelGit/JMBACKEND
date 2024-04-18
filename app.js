@@ -3906,6 +3906,7 @@ app.get("/contracts-unauthenticated", async (req, res) => {
 
     let query = {};
 
+    // apply skill search filter
     if (filter_skills && filter_skills !== "null") {
       const parsed_skills = filter_skills.split(",");
       if (parsed_skills.length > 0) {
@@ -3916,6 +3917,19 @@ app.get("/contracts-unauthenticated", async (req, res) => {
             }
           }))
         }
+      }
+    }
+
+    // apply filter title filter
+    if (filter_title && filter_title !== "null") {
+      const regex = new RegExp(filter_title, 'i');
+      query.title = { $regex: regex };
+      query.description = { $regex: regex };
+    }
+
+    if (filter_timeline && filter_timeline !== "null") {
+      query.timeline = {
+        title: decodeURIComponent(filter_timeline)
       }
     }
     
