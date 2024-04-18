@@ -3902,10 +3902,35 @@ app.get("/contracts-unauthenticated", async (req, res) => {
       filter_timeline,
       skip,
     } = req.query;
-
     dbConnect(process.env.GEN_AUTH);
 
-    const contracts = await Contract.find().skip(parseInt(skip));
+    let query = {};
+
+    if (filter_skills) {
+      const skills = filter_skills.split("%20");
+      if (skills.length > 0) {
+        query.$expr = {
+          $allElementsTrue: {
+            $map: {
+              input: skills,
+              in: {
+                $in: [
+                  "$$this",
+                  {
+                    $map: {
+                      input: "$skills.title",
+                      in: { $toLower: "$$this" }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        };
+      }
+    }
+    
+    const contracts = await Contract.find(query).skip(parseInt(skip));
 
     res.status(202).json({
       message: "Contracts found",
