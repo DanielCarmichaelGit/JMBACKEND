@@ -3942,7 +3942,8 @@ app.get("/contracts-unauthenticated", async (req, res) => {
       message: "Contracts found",
       count: contracts.length,
       contracts,
-      queries: query
+      queries: query,
+      skills: filter_skills
     });
   } catch (error) {
     res.status(500).json({ status: 500, message: error.message });
