@@ -3812,6 +3812,8 @@ app.post("/contracts", authenticateJWT, async (req, res) => {
     
     if (client_account_id) {
       dbConnect(process.env.GEN_AUTH);
+
+      const client_account = await ClientAccount.findOne({ account_id: client_account_id });
       
       const newContract = new Contract({
         contract_id: uuidv4(),
@@ -3821,6 +3823,13 @@ app.post("/contracts", authenticateJWT, async (req, res) => {
         budget,
         status: "Open",
         client_account_id,
+        client_account_details: {
+          member_since: client_account.creation_date,
+          name: client_account.account_name,
+          rating: client_account.rating,
+          tags: client_account.tags,
+          status: client_account.status
+        },
         created_date: Date.now(),
         timeline,
         recurring: false,
@@ -3886,10 +3895,9 @@ app.get("/contracts-authenticated", authenticateJWT, async (req, res) => {
 
 app.get("/contracts-unauthenticated", async (req, res) => {
   try {
-    const { filter_date, filter_skills, filter_title, skip } = req.query;
+    const { filter_date, filter_skills, filter_title, filter_timeline, skip } = req.query;
     dbConnect(process.env.GEN_AUTH);
     
-    const client_account = await ClientAccount.findOne({ account_id: client_account_id });
     let contracts = await Contract.find({ client_account_id });
 
     contracts = contracts.map((contract) => {
