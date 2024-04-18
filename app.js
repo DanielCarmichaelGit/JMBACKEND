@@ -3907,7 +3907,7 @@ app.get("/contracts-unauthenticated", async (req, res) => {
     let query = {};
 
     if (filter_skills && filter_skills !== "null") {
-      const parsed_skills = filter_skills.split("%20");
+      const parsed_skills = filter_skills.split(",");
       if (parsed_skills.length > 0) {
         query.skills = {
           $all: parsed_skills.map(skill => ({
