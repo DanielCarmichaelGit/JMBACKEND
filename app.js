@@ -3930,7 +3930,13 @@ app.get("/contracts-unauthenticated", async (req, res) => {
       }
     }
     
-    const contracts = await Contract.find(query).skip(parseInt(skip));
+    let contracts = [];
+
+    if (Object.keys(query).length > 0) {
+      contracts = await Contract.find(query).skip(parseInt(skip));
+    } else {
+      contracts = await Contract.find().skip(parseInt(skip));
+    }
 
     res.status(202).json({
       message: "Contracts found",
