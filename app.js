@@ -3914,7 +3914,7 @@ app.get("/contracts-unauthenticated", async (req, res) => {
       req.query;
     dbConnect(process.env.GEN_AUTH);
 
-    let query = {};
+    let query = { status: "Open" };
 
     // apply skill search filter
     if (filter_skills && filter_skills !== "null") {
