@@ -3798,23 +3798,25 @@ app.get("/skills", async (req, res) => {
     res.status(202).json({
       message: "Skills found",
       count: skills.length,
-      skills
-    })
+      skills,
+    });
   } catch (error) {
     res.status(500).json({ status: 500, message: error });
   }
-})
+});
 
 app.post("/contracts", authenticateJWT, async (req, res) => {
   try {
     const { title, description, skills, budget, timeline } = req.body;
     const client_account_id = req.user.account_id;
-    
+
     if (client_account_id) {
       dbConnect(process.env.GEN_AUTH);
 
-      const client_account = await ClientAccount.findOne({ account_id: client_account_id });
-      
+      const client_account = await ClientAccount.findOne({
+        account_id: client_account_id,
+      });
+
       const newContract = new Contract({
         contract_id: uuidv4(),
         title,
@@ -3828,28 +3830,30 @@ app.post("/contracts", authenticateJWT, async (req, res) => {
           name: client_account.account_name,
           rating: client_account.rating,
           tags: client_account.tags,
-          status: client_account.status
+          status: client_account.status,
         },
         created_date: Date.now(),
         timeline,
         recurring: false,
         application_count: 0,
       });
-      
+
       const created_contract = await newContract.save();
-      res.status(200).json({ message: "Contract Created", contract: created_contract });
-      
+      res
+        .status(200)
+        .json({ message: "Contract Created", contract: created_contract });
+
       // Create or retrieve skill documents asynchronously
       skills.forEach(async (skill) => {
         const { title } = skill;
         const existingSkill = await Skill.findOne({ skill_title: title });
-        
+
         if (!existingSkill) {
           const newSkill = new Skill({
             skill_id: uuidv4(),
-            skill_title: title
+            skill_title: title,
           });
-          
+
           await newSkill.save();
         }
       });
@@ -3865,43 +3869,39 @@ app.get("/contracts-authenticated", authenticateJWT, async (req, res) => {
   try {
     const client_account_id = req.user.account_id;
     const user_id = req.user.userId;
-    
+
     dbConnect(process.env.GEN_AUTH);
 
     if (client_account_id) {
-      const client_account = await ClientAccount.findOne({ account_id: client_account_id });
+      const client_account = await ClientAccount.findOne({
+        account_id: client_account_id,
+      });
       let contracts = await Contract.find({ client_account_id });
 
       contracts = contracts.map((contract) => {
         return {
           ...contract._doc,
-          rating: client_account.rating
-        }
-      })
+          rating: client_account.rating,
+        };
+      });
 
       res.status(202).json({
         message: "Contracts found",
         count: contracts.length,
-        contracts
-      })
-
+        contracts,
+      });
     } else if (user_id) {
-      res.status("working on this")
+      res.status("working on this");
     }
   } catch (error) {
     res.status(500).json({ status: 500, message: error });
   }
-})
+});
 
 app.get("/contracts-unauthenticated", async (req, res) => {
   try {
-    const {
-      filter_date,
-      filter_skills,
-      filter_title,
-      filter_timeline,
-      skip,
-    } = req.query;
+    const { filter_date, filter_skills, filter_title, filter_timeline, skip } =
+      req.query;
     dbConnect(process.env.GEN_AUTH);
 
     let query = {};
@@ -3911,18 +3911,18 @@ app.get("/contracts-unauthenticated", async (req, res) => {
       const parsed_skills = filter_skills.split(",");
       if (parsed_skills.length > 0) {
         query.skills = {
-          $all: parsed_skills.map(skill => ({
+          $all: parsed_skills.map((skill) => ({
             $elemMatch: {
-              title: skill
-            }
-          }))
-        }
+              title: skill,
+            },
+          })),
+        };
       }
     }
 
     // apply filter title filter
     if (filter_title && filter_title !== "null") {
-      const regex = new RegExp(filter_title, 'i');
+      const regex = new RegExp(filter_title, "i");
       query.title = { $regex: regex };
       query.description = { $regex: regex };
     }
@@ -3930,19 +3930,18 @@ app.get("/contracts-unauthenticated", async (req, res) => {
     if (filter_timeline && filter_timeline !== "null") {
       const decoded = decodeURIComponent(filter_timeline);
       const parsed = JSON.parse(decoded);
-      query["timeline.title"] = parsed.title
+      query["timeline.title"] = parsed.title;
     }
 
     if (filter_date && filter_date !== "null") {
-      const start = parseInt(filter_date) * 60 * 60 * 1000;
+      const start = Date.now() - parseInt(filter_date) * 60 * 60 * 1000;
       const end = Date.now();
-
       query.created_date = {
-        $gte: new Date(end - start),
-        $lte: new Date(end)
+        $gte: start.toString(),
+        $lte: end.toString(),
       };
     }
-    
+
     let contracts = [];
     let totalCount = 0;
 
