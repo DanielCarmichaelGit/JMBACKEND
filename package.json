@@ -6,6 +6,7 @@
         "start": "node app.js"
     },
     "dependencies": {
+        "aws-sdk": "^2.1603.0",
         "axios": "^1.6.5",
         "bcrypt": "^5.0.1",
         "cors": "^2.8.5",

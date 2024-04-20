@@ -10,6 +10,8 @@ const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const sgTransport = require("nodemailer-sendgrid-transport");
 const bcrypt = require("bcrypt");
+const multer = require('multer');
+const AWS = require('aws-sdk');
 
 // Secret key for JWT signing (change it to a strong, random value)
 const SECRET_JWT = process.env.SECRET_JWT;
@@ -31,6 +33,14 @@ const ClientAccount = require("./src/models/clientAccount");
 const JoinCode = require("./src/models/joincodes");
 const Contract = require("./src/models/contract");
 const Skill = require("./src/models/skill");
+const upload = multer({ dest: 'uploads/' });
+
+AWS.config.update({
+  accessKeyId: process.env.S3_BUCKET_KEY_ID,
+  secretAccessKey: process.env.S3_BUCKET_KEY,
+  region: 'ohio',
+});
+
 
 const app = express();
 app.use(cors());
@@ -4261,6 +4271,31 @@ app.post("/autosave-document", authenticateJWT, async (req, res) => {
     res.status(500).json({
       message: "Error auto-saving document",
       error: error.message,
+    });
+  }
+});
+
+app.post('/photo-upload', authenticateJWT, upload.single('photo'), (req, res) => {
+  if (req.user.userId){
+    const file = req.file;
+    
+    const s3 = new AWS.S3();
+  
+    const params = {
+      Bucket: 'kamariteams',
+      Key: file.originalname,
+      Body: file.buffer,
+      ACL: 'public-read',
+    };
+  
+    s3.upload(params, (err, data) => {
+      if (err) {
+        console.error(err);
+        res.status(500).send('Error uploading photo');
+      } else {
+        const photoUrl = data.Location;
+        res.status(200).json({ photoUrl });
+      }
     });
   }
 });
