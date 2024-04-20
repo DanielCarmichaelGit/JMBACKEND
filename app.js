@@ -3923,8 +3923,10 @@ app.get("/contracts-unauthenticated", async (req, res) => {
     // apply filter title filter
     if (filter_title && filter_title !== "null") {
       const regex = new RegExp(filter_title, "i");
-      query.title = { $regex: regex };
-      query.description = { $regex: regex };
+      query.$or = [
+        { title: { $regex: regex } },
+        { description: { $regex: regex } }
+      ];
     }
 
     if (filter_timeline && filter_timeline !== "null") {
