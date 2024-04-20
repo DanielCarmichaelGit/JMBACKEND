@@ -33,6 +33,9 @@ const ClientAccount = require("./src/models/clientAccount");
 const JoinCode = require("./src/models/joincodes");
 const Contract = require("./src/models/contract");
 const Skill = require("./src/models/skill");
+const MarketableFreelancer = require("./src/models/marketableFreelancers");
+const Application = require("./src/models/application");
+
 const upload = multer({ dest: 'uploads/' });
 
 AWS.config.update({
@@ -4189,6 +4192,59 @@ app.delete("/document", authenticateJWT, async (req, res) => {
     });
   }
 });
+
+app.post("/application", async (req, res) => {
+  try {
+    const { applicant_type, contract_id, applicant_email, applicant_work_history, skills, quote, opt_in } = req.body;
+
+    if (applicant_type && contract_id) {
+      dbConnect(process.env.GEN_AUTH);
+      const application_id = uuidv4();
+
+      if (applicant_type === "user") {
+        res.status(202).json({
+          message: "Not yet built"
+        })
+      } else if (applicant_type === "free") {
+        const newApplication = new Application({
+          application_id,
+          applicant_type,
+          quote,
+          applicant_work_history,
+          applicant_email,
+          applied_date: Date.now(),
+          skills,
+          status: "pending",
+          contract_id
+        })
+
+        const created_application = await newApplication.save();
+        
+        if (created_application) {
+          Contract.findOneAndUpdate({ contract_id }, {
+            $inc: {
+              application_count: 1
+            }
+          })
+
+          if (opt_in && (opt_in === true || opt_in === "true")) {
+            new MarketableFreelancer({
+              freelancer_email: applicant_email,
+              status: "email-only",
+              converted: false,
+              opted_in: true
+            })
+          }
+        }
+      }
+    }
+  } catch (error) {
+    res.status(500).json({
+      message: "Error posting application",
+      error: error.message,
+    });
+  }
+})
 
 app.post("/autosave-document", authenticateJWT, async (req, res) => {
   try {
