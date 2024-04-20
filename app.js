@@ -4222,14 +4222,15 @@ app.post("/applications", async (req, res) => {
         const created_application = await newApplication.save();
         
         if (created_application) {
-          res.status(200).json({
-            message: "Application Submitted"
-          })
-
-          Contract.findOneAndUpdate({ contract_id }, {
+          
+          await Contract.findOneAndUpdate({ contract_id }, {
             $inc: {
               application_count: 1
             }
+          })
+          
+          res.status(200).json({
+            message: "Application Submitted"
           })
 
           let newMarketableFreelancer = {};
