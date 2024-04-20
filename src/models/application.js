@@ -8,6 +8,7 @@ const applicationSchema = new mongoose.Schema({
   intro_message: { type: String, required: false },
   contract_id: { type: String, required: true },
   applicant_portfolio_id: { type: String, required: false },
+  applicant_description: { type: String, required: true },
   applicant_work_history: { type: Array, required: true },
   applicant_email: { type: String, required: true },
   applied_date: { type: String, required: false },

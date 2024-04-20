@@ -4193,9 +4193,9 @@ app.delete("/document", authenticateJWT, async (req, res) => {
   }
 });
 
-app.post("/application", async (req, res) => {
+app.post("/applications", async (req, res) => {
   try {
-    const { applicant_type, contract_id, applicant_email, applicant_work_history, skills, quote, opt_in } = req.body;
+    const { applicant_type, contract_id, applicant_email, applicant_work_history, skills, quote, opt_in, applicant_description } = req.body;
 
     if (applicant_type && contract_id) {
       dbConnect(process.env.GEN_AUTH);
@@ -4215,26 +4215,46 @@ app.post("/application", async (req, res) => {
           applied_date: Date.now(),
           skills,
           status: "pending",
-          contract_id
+          contract_id,
+          applicant_description
         })
 
         const created_application = await newApplication.save();
         
         if (created_application) {
+          res.status(200).json({
+            message: "Application Submitted"
+          })
+
           Contract.findOneAndUpdate({ contract_id }, {
             $inc: {
               application_count: 1
             }
           })
 
+          let newMarketableFreelancer = {};
+
           if (opt_in && (opt_in === true || opt_in === "true")) {
-            new MarketableFreelancer({
+            newMarketableFreelancer = new MarketableFreelancer({
               freelancer_email: applicant_email,
               status: "email-only",
               converted: false,
               opted_in: true
             })
+          } else {
+            newMarketableFreelancer = new MarketableFreelancer({
+              freelancer_email: applicant_email,
+              status: "email-only",
+              converted: false,
+              opted_in: false
+            })
           }
+
+          newMarketableFreelancer.save();
+        } else {
+          res.status(500).json({
+            message: "An Unknown Error Occured"
+          })
         }
       }
     }
