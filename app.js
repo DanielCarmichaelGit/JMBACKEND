@@ -4195,7 +4195,7 @@ app.delete("/document", authenticateJWT, async (req, res) => {
 
 app.get("/applications-unauthorized", async (req, res) => {
   try {
-    const { applicant_email } = req.body;
+    const { applicant_email } = req.query;
 
     let applications = [];
     dbConnect(process.env.GEN_AUTH);
@@ -4218,7 +4218,7 @@ app.get("/applications-unauthorized", async (req, res) => {
 
 app.get("/applications", authenticateJWT, async (req, res) => {
   try {
-    const { contract_id } = req.body;
+    const { contract_id } = req.query;
     const user_id = req.user.userId;
     const client_account_id = req.user.account_id;
 
