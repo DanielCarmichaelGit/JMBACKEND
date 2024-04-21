@@ -4193,6 +4193,76 @@ app.delete("/document", authenticateJWT, async (req, res) => {
   }
 });
 
+app.get("/applications-unauthorized", async (req, res) => {
+  try {
+    const { applicant_email } = req.body;
+
+    let applications = [];
+    dbConnect(process.env.GEN_AUTH);
+
+    applications = await Application.find({ applicant_email });
+
+    res.status(202).json({
+      message: "Applications Found",
+      count: applications.length,
+      applications
+    })
+   
+  } catch (error) {
+    res.status(500).json({
+      message: "Error fetching appliations",
+      error: error.message,
+    });
+  }
+})
+
+app.get("/applications", authenticateJWT, async (req, res) => {
+  try {
+    const { contract_id } = req.body;
+    const user_id = req.user.userId;
+    const client_account_id = req.user.account_id;
+
+    let applications = [];
+    dbConnect(process.env.GEN_AUTH);
+
+    if (client_account_id) {
+      applications = await Application.find({ contract_id });
+      res.status(202).json({
+        message: "Applications Found",
+        count: applications.length,
+        applications
+      })
+    }
+    else if (user_id) {
+      const user = await User.findOne({ user_id });
+
+      if (user) {
+        applications = await Application.find({ "applicant_email": user.email });
+        res.status(202).json({
+          message: "Applications Found",
+          count: applications.length,
+          applications
+        })
+      } else {
+        res.status(404).json({
+          message: "Could Not Find User"
+        })
+      }
+    }
+    else {
+      res.status(409).json({
+        message: "Unauthorized Access. Cannot Fetch Applications.",
+        status: 409
+      })
+    }
+  } catch (error) {
+    res.status(500).json({
+      message: "Error fetching appliations",
+      error: error.message,
+    });
+  }
+})
+
 app.post("/applications", async (req, res) => {
   try {
     const { applicant_type, contract_id, applicant_email, applicant_work_history, skills, quote, opt_in, applicant_description } = req.body;
