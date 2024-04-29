@@ -1995,7 +1995,7 @@ app.put("/update-contracts", authenticateJWT, async (req, res) => {
 
       const { skills, title, description, budget, contract_id, timeline } = req.body;
 
-      await Contract.findOneAndUpdate(
+      const updated_contract = await Contract.findOneAndUpdate(
         { contract_id },
         {
           $set: {
@@ -2013,6 +2013,7 @@ app.put("/update-contracts", authenticateJWT, async (req, res) => {
 
       res.status(200).json({
         message: "Contract Updated",
+        contract: updated_contract
       });
     } else {
       res.status(409).json({
