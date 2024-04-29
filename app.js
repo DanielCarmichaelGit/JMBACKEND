@@ -10,8 +10,8 @@ const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const sgTransport = require("nodemailer-sendgrid-transport");
 const bcrypt = require("bcrypt");
-const multer = require('multer');
-const AWS = require('aws-sdk');
+const multer = require("multer");
+const AWS = require("aws-sdk");
 
 // Secret key for JWT signing (change it to a strong, random value)
 const SECRET_JWT = process.env.SECRET_JWT;
@@ -36,14 +36,13 @@ const Skill = require("./src/models/skill");
 const MarketableFreelancer = require("./src/models/marketableFreelancers");
 const Application = require("./src/models/application");
 
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({ dest: "uploads/" });
 
 AWS.config.update({
   accessKeyId: process.env.S3_BUCKET_KEY_ID,
   secretAccessKey: process.env.S3_BUCKET_KEY,
-  region: 'ohio',
+  region: "ohio",
 });
-
 
 const app = express();
 app.use(cors());
@@ -1974,6 +1973,46 @@ app.put("/update-project", authenticateJWT, async (req, res) => {
 
       res.status(200).json({
         message: "Project Updated",
+      });
+    } else {
+      res.status(409).json({
+        message: "Authentication Invalid",
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+});
+
+app.put("/update-contracts", authenticateJWT, async (req, res) => {
+  try {
+    const client_account_id = req.user.account_id;
+
+    if (client_account_id) {
+      dbConnect(process.env.GEN_AUTH);
+
+      const { skills, title, description, budget, contract_id, timeline } = req.body;
+
+      await Contract.findOneAndUpdate(
+        { contract_id },
+        {
+          $set: {
+            title,
+            description,
+            timeline,
+            budget,
+            skills
+          },
+        },
+        {
+          $new: true,
+        }
+      );
+
+      res.status(200).json({
+        message: "Contract Updated",
       });
     } else {
       res.status(409).json({
@@ -3938,7 +3977,7 @@ app.get("/contracts-unauthenticated", async (req, res) => {
       const regex = new RegExp(filter_title, "i");
       query.$or = [
         { title: { $regex: regex } },
-        { description: { $regex: regex } }
+        { description: { $regex: regex } },
       ];
     }
 
@@ -4205,16 +4244,15 @@ app.get("/applications-unauthorized", async (req, res) => {
     res.status(202).json({
       message: "Applications Found",
       count: applications.length,
-      applications
-    })
-   
+      applications,
+    });
   } catch (error) {
     res.status(500).json({
       message: "Error fetching appliations",
       error: error.message,
     });
   }
-})
+});
 
 app.get("/applications", authenticateJWT, async (req, res) => {
   try {
@@ -4230,30 +4268,28 @@ app.get("/applications", authenticateJWT, async (req, res) => {
       res.status(202).json({
         message: "Applications Found",
         count: applications.length,
-        applications
-      })
-    }
-    else if (user_id) {
+        applications,
+      });
+    } else if (user_id) {
       const user = await User.findOne({ user_id });
 
       if (user) {
-        applications = await Application.find({ "applicant_email": user.email });
+        applications = await Application.find({ applicant_email: user.email });
         res.status(202).json({
           message: "Applications Found",
           count: applications.length,
-          applications
-        })
+          applications,
+        });
       } else {
         res.status(404).json({
-          message: "Could Not Find User"
-        })
+          message: "Could Not Find User",
+        });
       }
-    }
-    else {
+    } else {
       res.status(409).json({
         message: "Unauthorized Access. Cannot Fetch Applications.",
-        status: 409
-      })
+        status: 409,
+      });
     }
   } catch (error) {
     res.status(500).json({
@@ -4261,11 +4297,20 @@ app.get("/applications", authenticateJWT, async (req, res) => {
       error: error.message,
     });
   }
-})
+});
 
 app.post("/applications", async (req, res) => {
   try {
-    const { applicant_type, contract_id, applicant_email, applicant_work_history, skills, quote, opt_in, applicant_description } = req.body;
+    const {
+      applicant_type,
+      contract_id,
+      applicant_email,
+      applicant_work_history,
+      skills,
+      quote,
+      opt_in,
+      applicant_description,
+    } = req.body;
 
     if (applicant_type && contract_id) {
       dbConnect(process.env.GEN_AUTH);
@@ -4273,8 +4318,8 @@ app.post("/applications", async (req, res) => {
 
       if (applicant_type === "user") {
         res.status(202).json({
-          message: "Not yet built"
-        })
+          message: "Not yet built",
+        });
       } else if (applicant_type === "free") {
         const newApplication = new Application({
           application_id,
@@ -4286,22 +4331,24 @@ app.post("/applications", async (req, res) => {
           skills,
           status: "pending",
           contract_id,
-          applicant_description
-        })
+          applicant_description,
+        });
 
         const created_application = await newApplication.save();
-        
+
         if (created_application) {
-          
-          await Contract.findOneAndUpdate({ contract_id }, {
-            $inc: {
-              application_count: 1
+          await Contract.findOneAndUpdate(
+            { contract_id },
+            {
+              $inc: {
+                application_count: 1,
+              },
             }
-          })
-          
+          );
+
           res.status(200).json({
-            message: "Application Submitted"
-          })
+            message: "Application Submitted",
+          });
 
           let newMarketableFreelancer = {};
 
@@ -4310,22 +4357,22 @@ app.post("/applications", async (req, res) => {
               freelancer_email: applicant_email,
               status: "email-only",
               converted: false,
-              opted_in: true
-            })
+              opted_in: true,
+            });
           } else {
             newMarketableFreelancer = new MarketableFreelancer({
               freelancer_email: applicant_email,
               status: "email-only",
               converted: false,
-              opted_in: false
-            })
+              opted_in: false,
+            });
           }
 
           newMarketableFreelancer.save();
         } else {
           res.status(500).json({
-            message: "An Unknown Error Occured"
-          })
+            message: "An Unknown Error Occured",
+          });
         }
       }
     }
@@ -4335,7 +4382,7 @@ app.post("/applications", async (req, res) => {
       error: error.message,
     });
   }
-})
+});
 
 app.post("/autosave-document", authenticateJWT, async (req, res) => {
   try {
@@ -4422,30 +4469,35 @@ app.post("/autosave-document", authenticateJWT, async (req, res) => {
   }
 });
 
-app.post('/photo-upload', authenticateJWT, upload.single('photo'), (req, res) => {
-  if (req.user.userId){
-    const file = req.file;
-    
-    const s3 = new AWS.S3();
-  
-    const params = {
-      Bucket: 'kamariteams',
-      Key: file.originalname,
-      Body: file.buffer,
-      ACL: 'public-read',
-    };
-  
-    s3.upload(params, (err, data) => {
-      if (err) {
-        console.error(err);
-        res.status(500).send('Error uploading photo');
-      } else {
-        const photoUrl = data.Location;
-        res.status(200).json({ photoUrl });
-      }
-    });
+app.post(
+  "/photo-upload",
+  authenticateJWT,
+  upload.single("photo"),
+  (req, res) => {
+    if (req.user.userId) {
+      const file = req.file;
+
+      const s3 = new AWS.S3();
+
+      const params = {
+        Bucket: "kamariteams",
+        Key: file.originalname,
+        Body: file.buffer,
+        ACL: "public-read",
+      };
+
+      s3.upload(params, (err, data) => {
+        if (err) {
+          console.error(err);
+          res.status(500).send("Error uploading photo");
+        } else {
+          const photoUrl = data.Location;
+          res.status(200).json({ photoUrl });
+        }
+      });
+    }
   }
-});
+);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
