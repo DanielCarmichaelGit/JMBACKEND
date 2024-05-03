@@ -35,6 +35,7 @@ const Contract = require("./src/models/contract");
 const Skill = require("./src/models/skill");
 const MarketableFreelancer = require("./src/models/marketableFreelancers");
 const Application = require("./src/models/application");
+const Talent = require("./src/models/talent");
 
 const upload = multer({ dest: "uploads/" });
 
@@ -86,6 +87,41 @@ app.get("/", (req, res) => {
   console.log("received home");
   return res.status(200).json({ message: "working" });
 });
+
+app.post("/talent", async (req, res) => {
+  try {
+    const { email, skills } = req.body;
+
+    if (email && skills) {
+      dbConnect(process.env.GEN_AUTH);
+
+      const new_talent = new Talent({
+        talent_id: uuidv4(),
+        email,
+        skills
+      })
+
+      const created_talent = await new_talent.save();
+
+      if (created_talent) {
+        res.status(200).json({
+          message: "talent created"
+        })
+      } else {
+        res.status(500).json({
+          message: "error creating talent"
+        })
+      }
+    } else {
+      res.status(400).json({
+        message: "payload body must include email string and skills array (even if empty)"
+      })
+    }
+  } catch (error) {
+    console.error("Error during user registration:", error);
+    res.status(500).json({ message: "Internal server error", error });
+  }
+})
 
 //###########################################################################
 // Add a POST endpoint for user registration (signup)
