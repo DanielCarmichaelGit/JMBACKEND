@@ -93,6 +93,7 @@ app.post("/signup", async (req, res) => {
   try {
     await dbConnect(process.env.GEN_AUTH);
     const { password, email, name, type } = req.body;
+    const { first, last } = name;
 
     // Check if the username already exists
     const existingUser = await User.findOne({ email });
@@ -110,7 +111,10 @@ app.post("/signup", async (req, res) => {
 
       const new_user = new User({
         user_id: uuidv4(),
-        name,
+        name: {
+          first: first,
+          last: last
+        },
         email,
         password: hashedPassword,
         type
