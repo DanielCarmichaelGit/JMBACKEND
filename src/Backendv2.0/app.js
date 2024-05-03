@@ -59,16 +59,27 @@ app.get("/", (req, res) => {
   return res.status(200).json({ message: "working" });
 });
 
+const saltRounds = 10;
+
 app.post("/signup", async (req, res) => {
   try {
-    const { type, account_details } = req.body;
+    const { type, email, password, name, source = "organic" } = req.body;
+    dbConnect(process.env.GEN_AUTH);
 
     if (type) {
-      const new_user = new User({});
-    } else {
-      res.status(400).json({
-        message: "payload must include a 'type' enumeration: ['freelancer', 'client']" 
-      })
+      const new_user = new User({
+        type,
+        user_id: uuidv4(),
+        email,
+        password: await bcrypt.hash(password, saltRounds),
+        name: {
+          first: name.first,
+          last: name.last
+        },
+        marketable: true,
+        marketing_source
+      });
+      if (type === "freelancer") {} else if (type === "client") {}
     }
   } catch (error) {
     res.status(500).json({
@@ -79,7 +90,56 @@ app.post("/signup", async (req, res) => {
   }
 })
 
+app.post("/login", async (req, res) => {
+  try {
+    const { email, password, auth_type = "standard" } = req.body;
 
+    if (auth_type === "standard") {
+      if (email && password) {
+        dbConnect(process.env.GEN_AUTH);
+        const user = User.findOne({ email });
+
+        if (user) {
+          const hash_compare = await comparePassword(
+            password,
+            user.password
+          );
+          if (hash_compare) {
+            console.log("hash compare true");
+            const signed_user = jwt.sign(
+              { user, userId: user.user_id },
+              process.env.SECRET_JWT,
+              {
+                expiresIn: "7d",
+              }
+            );
+    
+            const result = {
+              user,
+              token: signed_user,
+            };
+    
+            res.status(200).json(result);
+          } else {
+            console.log("hash compare false");
+            res
+              .status(400)
+              .json({ message: "invalid email - password combination" });
+          }
+        }
+      } else {
+        res.status(404).json({
+          message: "invalid email - password combination"
+        })
+      }
+    }
+  } catch (error) {
+    res.status(500).json({
+      message: "Issue Logging In",
+      status: 500
+    })
+  }
+})
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

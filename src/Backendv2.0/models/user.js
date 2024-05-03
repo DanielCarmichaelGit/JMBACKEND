@@ -18,18 +18,6 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  organization: {
-    type: Object,
-    required: true,
-  },
-  kpi_data: {
-    type: Object,
-    required: true,
-  },
-  tasks: {
-    type: Array,
-    required: true,
-  },
   type: {
     type: String,
     required: true
@@ -38,17 +26,25 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: false,
   },
-  sprints: {
-    type: Array,
-    required: true
-  },
   marketable: {
     type: Boolean,
     required: true
   },
   hourly_rate: {
     type: Number,
+    required: false
+  },
+  marketing_source: {
+    type: String,
     required: true
+  },
+  referral_code: {
+    type: String,
+    required: false
+  },
+  referred_by: {
+    type: String,
+    required: false
   }
 });
 

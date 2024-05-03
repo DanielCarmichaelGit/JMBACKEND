@@ -18,21 +18,21 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  type: {
+    type: String,
+    required: true,
+  },
   organization: {
     type: Object,
-    required: true,
+    required: false,
   },
   kpi_data: {
     type: Object,
-    required: true,
+    required: false,
   },
   tasks: {
     type: Array,
-    required: true,
-  },
-  type: {
-    type: String,
-    required: true
+    required: false,
   },
   profile_image_url: {
     type: String,
@@ -40,15 +40,15 @@ const userSchema = new mongoose.Schema({
   },
   sprints: {
     type: Array,
-    required: true
+    required: false
   },
   marketable: {
     type: Boolean,
-    required: true
+    required: false
   },
   hourly_rate: {
     type: Number,
-    required: true
+    required: false
   }
 });
 

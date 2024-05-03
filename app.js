@@ -48,6 +48,7 @@ const app = express();
 app.use(cors());
 app.options("*", cors()); // Enable CORS pre-flight request for all routes
 app.use(express.json({ limit: "50mb" }));
+const saltRounds = 10;
 
 // create utility transporter for email service
 const transporter = nodemailer.createTransport(
@@ -91,22 +92,7 @@ app.get("/", (req, res) => {
 app.post("/signup", async (req, res) => {
   try {
     await dbConnect(process.env.GEN_AUTH);
-    const {
-      password,
-      email,
-      organization,
-      type,
-      role,
-      existing_org_id,
-      name,
-      invitation_id,
-      hourly_rate,
-    } = req.body;
-    console.log(name);
-
-    const { first, last } = name;
-
-    console.log("full name", first, last);
+    const { password, email, name, type } = req.body;
 
     // Check if the username already exists
     const existingUser = await User.findOne({ email });
@@ -115,291 +101,39 @@ app.post("/signup", async (req, res) => {
     if (existingUser) {
       return res.status(409).json({
         message: "Username already exists",
-        redirect: { url: "https://kamariteams.com" },
+        redirect: {
+          url: `https://app.kamariteams.com/authenticate?direction=login&email=${email}`,
+        },
       });
-    }
-
-    if (existing_org_id) {
-      console.log("Signing up a user for existing org");
-      try {
-        console.log("1");
-        const saltRounds = 10;
-        const hashedPassword = await bcrypt.hash(password, saltRounds);
-        const user_id = uuidv4();
-        const org_id = existing_org_id;
-
-        console.log("2", org_id);
-
-        const organization = await Organization.findOne({ org_id });
-
-        console.log("3", organization);
-
-        const newUser = new User({
-          user_id,
-          email,
-          password: hashedPassword,
-          name: {
-            first,
-            last,
-          },
-          organization,
-          kpi_data: {},
-          tasks: [],
-          type: "Standard",
-          sprints: [],
-          marketable: true,
-          hourly_rate: parseInt(hourly_rate),
-        });
-
-        console.log("4", newUser);
-
-        const created_user = await newUser.save();
-
-        console.log("5", created_user);
-
-        const org_user = {
-          user_id,
-          email,
-          name: {
-            first,
-            last,
-          },
-          role,
-          hourly_rate: parseInt(hourly_rate),
-        };
-
-        console.log("6", org_user);
-
-        if (role.toLowerCase() === "Admin") {
-          console.log("7", "admin");
-          organization.admins.push(org_user);
-        } else {
-          console.log("8", "standard");
-          organization.members.push(org_user);
-        }
-
-        console.log("9", organization.seats);
-
-        organization.seats = organization.seats + 1;
-
-        console.log("10", organization.seats);
-
-        const updated_org = await Organization.findOneAndUpdate(
-          { org_id },
-          {
-            $set: { ...organization },
-          }
-        );
-
-        console.log("11", updated_org);
-
-        // sign the first token provided to the user
-        const token = jwt.sign(
-          { user: created_user, userId: user_id },
-          process.env.SECRET_JWT,
-          {
-            expiresIn: "7d",
-          }
-        );
-
-        console.log("12", token);
-
-        await TeamInvitation.findOneAndUpdate(
-          { invitation_id },
-          {
-            status: "accepted",
-          }
-        );
-
-        console.log("13");
-
-        res.status(200).json({
-          message: "User Registered",
-          user: created_user,
-          organization: updated_org,
-          token,
-        });
-      } catch (error) {
-        res.status(500).json({ message: error });
-      }
     } else {
-      const saltRounds = 10;
       const hashedPassword = await bcrypt.hash(password, saltRounds);
-      const user_id = uuidv4();
-      const org_id = uuidv4();
-      const sprint_id = uuidv4();
-      const project_id = uuidv4();
 
-      //Create a jam group for this new user
-      const newUser = new User({
-        user_id,
+      const new_user = new User({
+        user_id: uuidv4(),
+        name,
         email,
         password: hashedPassword,
-        name: {
-          first,
-          last,
-        },
-        organization: {},
-        kpi_data: {},
-        tasks: [],
-        type: "Standard",
-        sprints: [sprint_id],
-        marketable: true,
-        hourly_rate: parseInt(hourly_rate),
-      });
-
-      const org_user = {
-        user_id,
-        email,
-        name: {
-          first: first,
-          last: last,
-        },
-        type,
-        hourly_rate: parseInt(hourly_rate),
-      };
-
-      // create new org
-      const newOrg = new Organization({
-        org_id,
-        name: organization,
-        admins: [org_user],
-        members: [org_user],
-        seats: 2,
-        status: "active",
-        billable_user: {
-          email: newUser.email,
-          user_id: newUser.user_id,
-        },
-        billing: {},
-        sprints: [sprint_id],
-        client_invitations: [],
-      });
-
-      const created_org = await newOrg.save();
-
+        type
+      })
       // save new user and the new group made for the user
-      newUser.organization = created_org;
-      const created_user = await newUser.save();
+      const created_user = await new_user.save();
 
-      // generate email content
-      const mail_options = {
-        from: "contact@kamariteams.com",
-        to: email, // The user's email address
-        subject: "Welcome to Kamari",
-        html: `
-      <html>
-      <head>
-        <style>
-          /* Add inline styles here for your email */
-          body {
-            font-family: Arial, sans-serif;
-            background-color: #f5f5f5;
-            margin: 0;
-            padding: 0;
-          }
-          .container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #ffffff;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-          }
-          .header {
-            text-align: center;
-            background-color: #007BFF;
-            color: #ffffff;
-            padding: 20px 0;
-            border-radius: 10px 10px 0 0;
-          }
-          .header h1 {
-            font-size: 24px;
-            margin: 0;
-          }
-          .content {
-            padding: 20px;
-          }
-          .content img {
-            max-width: 100%;
-            height: auto;
-            display: block;
-            margin: 0 auto;
-          }
-          .button {
-            text-align: center;
-            margin-top: 20px;
-          }
-          .button a {
-            display: inline-block;
-            background-color: #007BFF;
-            color: #ffffff;
-            text-decoration: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-          }
-          .unsubscribe {
-            text-align: center;
-            margin-top: 20px;
-          }
-          .unsubscribe a {
-            color: #007BFF;
-            text-decoration: none;
-          }
-          .footer {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 12px;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>Welcome to Kamari</h1>
-          </div>
-          <div class="content">
-            <img src="https://jammanager.s3.us-east-2.amazonaws.com/kamari.png" alt="Kamari Logo">
-            <div class="button">
-              <a href="kamariteams.com" style="background-color: #007BFF; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Visit Jam Manager</a>
-            </div>
-          </div>
-          <div class="unsubscribe">
-            <a href="https://kamariteams.com/unsubscribe/${email}">Unsubscribe</a>
-          </div>
-          <div class="footer">
-            <a href="https://kamariteams.com/terms-and-conditions">Terms</a>
-          </div>
-        </div>
-      </body>
-      </html>
-      `,
-      };
-
-      // call transporter to send email
-      transporter.sendMail(mail_options, (error, info) => {
-        if (error) {
-          console.error("Email sending error:", error);
-        } else {
-          console.log("Email sent:", info);
-        }
-      });
-
-      // sign the first token provided to the user
       const token = jwt.sign(
-        { user: created_user, userId: user_id },
+        {
+          user: created_user,
+          user_id: created_user.user_id
+        },
         process.env.SECRET_JWT,
         {
-          expiresIn: "7d",
+          expiresIn: "7d"
         }
-      );
+      )
 
       res.status(200).json({
-        message: "User Registered",
+        message: "user created",
         user: created_user,
-        organization: created_org,
-        token,
-      });
+        token
+      })
     }
   } catch (error) {
     console.error("Error during user registration:", error);
@@ -1993,7 +1727,8 @@ app.put("/update-contracts", authenticateJWT, async (req, res) => {
     if (client_account_id) {
       dbConnect(process.env.GEN_AUTH);
 
-      const { skills, title, description, budget, contract_id, timeline } = req.body;
+      const { skills, title, description, budget, contract_id, timeline } =
+        req.body;
 
       const updated_contract = await Contract.findOneAndUpdate(
         { contract_id },
@@ -2003,7 +1738,7 @@ app.put("/update-contracts", authenticateJWT, async (req, res) => {
             description,
             timeline,
             budget,
-            skills
+            skills,
           },
         },
         {
@@ -2013,7 +1748,7 @@ app.put("/update-contracts", authenticateJWT, async (req, res) => {
 
       res.status(200).json({
         message: "Contract Updated",
-        contract: updated_contract
+        contract: updated_contract,
       });
     } else {
       res.status(409).json({
