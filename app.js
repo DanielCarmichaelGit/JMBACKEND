@@ -1,6 +1,5 @@
 const express = require("express");
 const cors = require("cors");
-const fetch = require('node-fetch');
 
 // import utility functions
 const dbConnect = require("./src/utils/dbConnect");
