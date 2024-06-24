@@ -145,6 +145,8 @@ app.get("/link-token", async (req, res) => {
       }
     );
 
+    console.log(response)
+
     const data = await response.json();
     res.status(200).json({ token: data });
   } catch (error) {
