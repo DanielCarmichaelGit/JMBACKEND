@@ -134,8 +134,8 @@ app.get("/link-token", async (req, res) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          client_id: "666378858bd635001b6a4a8f",
-          secret: "6425ac3ba621e79d9f60515f36a0a7",
+          client_id: process.env.client_id,
+          secret: process.env.secret,
           user: { client_user_id: "unique-user-id" },
           client_name: "FRED",
           products: ["auth"],
