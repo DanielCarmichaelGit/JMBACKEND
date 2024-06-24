@@ -98,30 +98,60 @@ app.post("/talent", async (req, res) => {
       const new_talent = new Talent({
         talent_id: uuidv4(),
         email,
-        skills
-      })
+        skills,
+      });
 
       const created_talent = await new_talent.save();
 
       if (created_talent) {
         res.status(200).json({
-          message: "talent created"
-        })
+          message: "talent created",
+        });
       } else {
         res.status(500).json({
-          message: "error creating talent"
-        })
+          message: "error creating talent",
+        });
       }
     } else {
       res.status(400).json({
-        message: "payload body must include email string and skills array (even if empty)"
-      })
+        message:
+          "payload body must include email string and skills array (even if empty)",
+      });
     }
   } catch (error) {
     console.error("Error during user registration:", error);
     res.status(500).json({ message: "Internal server error", error });
   }
-})
+});
+
+app.get("/link-token", async (req, res) => {
+  try {
+    const response = await fetch(
+      "https://sandbox.plaid.com/link/token/create",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          client_id: "666378858bd635001b6a4a8f",
+          secret: "6425ac3ba621e79d9f60515f36a0a7",
+          user: { client_user_id: "unique-user-id" },
+          client_name: "FRED",
+          products: ["auth"],
+          country_codes: ["US"],
+          language: "en",
+        }),
+      }
+    );
+
+    const data = await response.json();
+    res.status(200).json({ token: data });
+  } catch (error) {
+    res.status(400).json({ message: error });
+    console.error("Error creating link token:", error);
+  }
+});
 
 //###########################################################################
 // Add a POST endpoint for user registration (signup)
@@ -149,31 +179,31 @@ app.post("/signup", async (req, res) => {
         user_id: uuidv4(),
         name: {
           first: first,
-          last: last
+          last: last,
         },
         email,
         password: hashedPassword,
-        type
-      })
+        type,
+      });
       // save new user and the new group made for the user
       const created_user = await new_user.save();
 
       const token = jwt.sign(
         {
           user: created_user,
-          user_id: created_user.user_id
+          user_id: created_user.user_id,
         },
         process.env.SECRET_JWT,
         {
-          expiresIn: "7d"
+          expiresIn: "7d",
         }
-      )
+      );
 
       res.status(200).json({
         message: "user created",
         user: created_user,
-        token
-      })
+        token,
+      });
     }
   } catch (error) {
     console.error("Error during user registration:", error);
