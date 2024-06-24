@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const fetch = require('node-fetch');
 
 // import utility functions
 const dbConnect = require("./src/utils/dbConnect");
@@ -134,8 +135,8 @@ app.get("/link-token", async (req, res) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          client_id: process.env.client_id,
-          secret: process.env.secret,
+          client_id: process.env.PLAID_CLIENT_ID,
+          secret: process.env.PLAID_SECRET,
           user: { client_user_id: "unique-user-id" },
           client_name: "FRED",
           products: ["auth"],
@@ -145,13 +146,15 @@ app.get("/link-token", async (req, res) => {
       }
     );
 
-    console.log(response)
+    if (!response.ok) {
+      throw new Error(`Error: ${response.statusText}`);
+    }
 
     const data = await response.json();
-    res.status(200).json({ token: data });
+    res.status(200).json({ token: data.link_token });
   } catch (error) {
-    res.status(400).json({ message: error });
     console.error("Error creating link token:", error);
+    res.status(400).json({ message: error.message });
   }
 });
 
